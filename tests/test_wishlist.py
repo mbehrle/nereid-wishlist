@@ -536,6 +536,8 @@ class TestWishlist(NereidTestCase):
                 self.assertEqual(rv.status_code, 302)
                 self.assertEqual(len(current_user.wishlists[0].products), 1)
 
+                # Incase a non-existent product id is fed to the POST request,
+                # 400 is thrown.
                 rv = c.post(
                     'wishlists/products',
                     data={
@@ -544,8 +546,10 @@ class TestWishlist(NereidTestCase):
                         'action': 'remove',
                     }
                 )
-                self.assertEqual(rv.status_code, 404)
+                self.assertEqual(rv.status_code, 400)
 
+                # If the action applied is not 'add' or 'remove', then 404
+                # is thrown.
                 rv = c.post(
                     'wishlists/products',
                     data={

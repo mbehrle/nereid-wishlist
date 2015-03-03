@@ -8,6 +8,7 @@
 
 from trytond.pool import PoolMeta, Pool
 from trytond.model import ModelView, ModelSQL, fields
+from trytond.transaction import Transaction
 from nereid import login_required, current_user, request, \
     redirect, url_for, render_template, route, abort, flash
 from nereid.contrib.locale import make_lazy_gettext
@@ -181,13 +182,28 @@ class Wishlist(ModelSQL, ModelView):
                 raise ValidationError("Wishlist not valid!")
         else:
             wishlist = cls._search_or_create_wishlist()
-        product = Product.search([
-            ('id', '=', request.form.get("product", type=int)),
-            ('displayed_on_eshop', '=', True),
-            ('template.active', '=', True),
-        ], limit=1)
-        if not product or request.form.get('action') not in ['add', 'remove']:
+        action = request.form.get('action')
+
+        if action == 'add':
+            product = Product.search([
+                ('id', '=', request.form.get("product", type=int)),
+                ('displayed_on_eshop', '=', True),
+                ('template.active', '=', True),
+            ], limit=1)
+        elif action == 'remove':
+            # We want to be able to search inactive products as well
+            with Transaction().set_context({'active_test': False}):
+                # This allows the removal of inactive products from wishlist
+                product = Product.search([
+                    ('id', '=', request.form.get("product", type=int)),
+                ], limit=1)
+        else:
             abort(404)
+
+        # If product was still not found, it does not exist in database
+        if not product:
+            abort(400)
+
         cls.write([wishlist], {
             'products': [(request.form.get('action'), product)],
         })
