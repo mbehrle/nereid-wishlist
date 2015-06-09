@@ -38,9 +38,10 @@ class TestWishlist(NereidTestCase):
         self.Locale = POOL.get('nereid.website.locale')
         self.Uom = POOL.get('product.uom')
         self.Template = POOL.get('product.template')
+        self.Product = POOL.get('product.product')
         self.Location = POOL.get('stock.location')
         self.PriceList = POOL.get('product.price_list')
-        self.SaleShop = POOL.get('sale.shop')
+        self.Channel = POOL.get('sale.channel')
 
         self.templates = {
             'wishlists.jinja':
@@ -306,21 +307,33 @@ class TestWishlist(NereidTestCase):
         shop_price_list = self._create_pricelists()
 
         with Transaction().set_context(company=self.company.id):
-            self.shop, = self.SaleShop.create([{
-                'name': 'Default Shop',
+            self.channel, = self.Channel.create([{
+                'name': 'Default channel',
                 'price_list': shop_price_list,
                 'warehouse': warehouse,
+                'source': 'webshop',
+                'invoice_method': 'order',
+                'shipment_method': 'order',
                 'payment_term': payment_term,
                 'company': self.company.id,
-                'users': [('add', [USER])]
+                'create_users': [('add', [USER])]
             }])
 
-        self.User.set_preferences({'shop': self.shop})
+        self.User.set_preferences({'current_channel': self.channel})
+
+        self.User.write(
+            [self.User(USER)], {
+                'main_company': self.company.id,
+                'company': self.company.id,
+                'current_channel': self.channel,
+            }
+        )
+
         self.NereidWebsite.create([{
             'name': 'localhost',
             'company': self.company.id,
             'application_user': USER,
-            'shop': self.shop,
+            'channel': self.channel,
             'default_locale': self.locale_en_us.id,
             'warehouse': warehouse,
             'stock_location': location,
@@ -689,6 +702,44 @@ class TestWishlist(NereidTestCase):
                 self.assertEqual(rv.status_code, 302)
                 wishlist = Wishlist(wishlist.id)    # reload the record
                 self.assertEqual(wishlist.name, 'Test2')
+
+    def test_0070_copy_product(self):
+        """
+        Test copy product should not copy wishlists
+        """
+        Wishlist = POOL.get('wishlist.wishlist')
+
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            uom, = self.Uom.search([], limit=1)
+            self.Template.create([{
+                'name': 'Product-1',
+                'type': 'goods',
+                'list_price': Decimal('10'),
+                'cost_price': Decimal('5'),
+                'default_uom': uom.id,
+                'products': [
+                    ('create', [{
+                        'uri': 'product-1',
+                        'displayed_on_eshop': True
+                    }])
+                ]
+            }])
+
+            product1, = self.Product.search([])
+
+            Wishlist.create([{
+                'nereid_user': self.registered_user,
+                'name': 'Books I Want to Read!',
+                'products': [('add', [product1])]
+            }])
+
+            self.assertEqual(len(product1.wishlists), 1)
+
+            product2, = self.Product.copy([product1])
+
+            self.assertEqual(len(product2.wishlists), 0)
 
 
 def suite():
