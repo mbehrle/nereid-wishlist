@@ -34,6 +34,18 @@ class Product:
         'product', 'wishlist', 'Wishlists'
     )
 
+    @classmethod
+    def copy(cls, products, default=None):
+        """Duplicate products
+        """
+        if default is None:
+            default = {}
+        default = default.copy()
+
+        default['wishlists'] = []
+
+        return super(Product, cls).copy(products, default)
+
 
 class NereidUser:
     """
