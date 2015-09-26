@@ -3,8 +3,6 @@
 
     nereid_wishlist test suite
 
-    :copyright: (c) 2014-2015 by Openlabs Technologies & Consulting (P) Ltd.
-    :license: GPLv3, see LICENSE for more details
 '''
 import unittest
 from decimal import Decimal
