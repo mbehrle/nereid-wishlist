@@ -1,4 +1,4 @@
-# 
+#
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
@@ -85,6 +85,14 @@ msgstr "Wunschliste - Variante"
 msgctxt "model:wishlist.wishlist,name:"
 msgid "Wishlist"
 msgstr "Wunschliste"
+
+msgctxt "nereid:wishlist.py:140"
+msgid "Wishlist with name: %(name)s already exists."
+msgstr "Eine Wunschliste mit der Bezeichnung %(name)s existiert bereits."
+
+msgctxt "nereid:wishlist.py:150"
+msgid "Changed name of wishlist to %(name)s."
+msgstr "Wunschlistenbezeichnung geändert zu %(name)s"
 
 msgctxt "view:nereid.user:"
 msgid "Wishlist"
