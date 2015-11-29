@@ -62,6 +62,8 @@ class Wishlist(ModelSQL, ModelView):
     """
     __name__ = "wishlist.wishlist"
 
+    is_public = fields.Boolean('Public', select=True)
+
     nereid_user = fields.Many2One(
         'nereid.user', 'Nereid User', select=True, required=True
     )
@@ -70,6 +72,10 @@ class Wishlist(ModelSQL, ModelView):
         'product.wishlist-product',
         'wishlist', 'product', 'Products',
     )
+
+    @staticmethod
+    def default_is_public():
+        return False
 
     @classmethod
     def _search_or_create_wishlist(cls, name="Default"):
@@ -117,7 +123,6 @@ class Wishlist(ModelSQL, ModelView):
         '/wishlists/<int:active_id>',
         methods=["POST", "GET", "DELETE"]
     )
-    @login_required
     def render_wishlist(self):
         """
         Render specific wishlist of current user.
@@ -125,7 +130,9 @@ class Wishlist(ModelSQL, ModelView):
         """
         Wishlist = Pool().get('wishlist.wishlist')
 
-        if self.nereid_user != current_user:
+        if self.nereid_user != current_user and \
+                (request.method != "GET" or not self.is_public):
+
             abort(404)
 
         if request.method == "POST" and request.form.get('name'):
@@ -133,6 +140,7 @@ class Wishlist(ModelSQL, ModelView):
             name = request.form.get('name')
             wishlist = Wishlist.search([
                 ('nereid_user', '=', current_user.id),
+                ('id', '!=', self.id),
                 ('name', '=', name),
             ], limit=1)
             if wishlist:
@@ -146,6 +154,8 @@ class Wishlist(ModelSQL, ModelView):
 
             else:
                 self.name = name
+                self.is_public = True if request.form.get('is_public') \
+                    else False
                 self.save()
                 flash(_('Changed name of wishlist to %(name)s.', name=name))
             if request.is_xhr:
