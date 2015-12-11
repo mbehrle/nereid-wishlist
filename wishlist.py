@@ -156,7 +156,7 @@ class Wishlist(ModelSQL, ModelView):
                 self.is_public = True if request.form.get('is_public') \
                     else False
                 self.save()
-                flash(_('Changed name of wishlist to %(name)s.', name=name))
+                flash(_('Wishlist Updated'))
             if request.is_xhr:
                 return 'success', 200
 
