@@ -258,6 +258,10 @@ class TestWishlist(NereidTestCase):
             'name': 'Registered User 2',
         }])
 
+        self.party4, = self.Party.create([{
+            'name': 'Registered User 3',
+        }])
+
         self.guest_user, = self.NereidUser.create([{
             'party': guest_party.id,
             'display_name': 'Guest User',
@@ -279,6 +283,13 @@ class TestWishlist(NereidTestCase):
             'display_name': 'Registered User 2',
             'email': 'email2@example.com',
             'password': 'password2',
+            'company': self.company.id,
+        }])
+        self.registered_user3, = self.NereidUser.create([{
+            'party': self.party4.id,
+            'display_name': 'Registered User 3',
+            'email': 'email3@example.com',
+            'password': 'password3',
             'company': self.company.id,
         }])
 
@@ -738,6 +749,66 @@ class TestWishlist(NereidTestCase):
             product2, = self.Product.copy([product1])
 
             self.assertEqual(len(product2.wishlists), 0)
+
+    def test_0080_access_public_private_wishlist(self):
+        """
+        Test to check working of public and private wishlist.
+        """
+        Wishlist = POOL.get('wishlist.wishlist')
+
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+            app = self.get_app()
+
+            user_private_wishlist, = Wishlist.create([{
+                'nereid_user': self.registered_user,
+                'name': 'Books I Want to Read!',
+            }])
+
+            user2_private_wishlist, = Wishlist.create([{
+                'nereid_user': self.registered_user2,
+                'name': 'Books I don\'t Want to Read!',
+            }])
+
+            user3_public_wishlist, = Wishlist.create([{
+                'nereid_user': self.registered_user3,
+                'name': 'Books I don\'t like!',
+                'is_public': True
+            }])
+
+            with app.test_client() as c:
+
+                # Guest user trying to access a private wishlist
+                rv = c.get(
+                    '/wishlists/%d' % (user_private_wishlist, )
+                    )
+                self.assertEqual(rv.status_code, 404)
+
+                # Guest user trying to access a public wishlist
+                rv = c.get(
+                    '/wishlists/%d' % (user3_public_wishlist, )
+                    )
+                self.assertEqual(rv.status_code, 200)
+
+                self.login(c, 'email@example.com', 'password')
+
+                # User trying to access its own wishlist
+                rv = c.get(
+                    '/wishlists/%d' % (user_private_wishlist, )
+                )
+                self.assertEqual(rv.status_code, 200)
+
+                # User trying to access private wishlist of another user
+                rv = c.get(
+                    '/wishlists/%d' % (user2_private_wishlist, )
+                )
+                self.assertEqual(rv.status_code, 404)
+
+                # User trying to access public wishlist of another user
+                rv = c.get(
+                    '/wishlists/%d' % (user3_public_wishlist, )
+                )
+                self.assertEqual(rv.status_code, 200)
 
 
 def suite():
