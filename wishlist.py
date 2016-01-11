@@ -78,7 +78,7 @@ class Wishlist(ModelSQL, ModelView):
         return False
 
     @classmethod
-    def _search_or_create_wishlist(cls, name="Default"):
+    def _search_or_create_wishlist(cls, name=''):
         """
         Search wishlist according to name.
         if wishlist exist return wishlist, if not create a
@@ -86,6 +86,8 @@ class Wishlist(ModelSQL, ModelView):
 
         return type: wishlist
         """
+        if not name:
+            name = _('Default')
         try:
             wishlist, = cls.search([
                 ('nereid_user', '=', current_user.id),
