@@ -90,6 +90,10 @@ msgctxt "model:wishlist.wishlist,name:"
 msgid "Wishlist"
 msgstr "Wunschliste"
 
+msgctxt "nereid:wishlist.py:90"
+msgid "Default"
+msgstr "Standard"
+
 msgctxt "nereid:wishlist.py:148"
 msgid "Wishlist with name: %(name)s already exists."
 msgstr "Eine Wunschliste mit dem Namen: %(name)s existiert bereits."
