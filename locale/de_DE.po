@@ -64,7 +64,7 @@ msgstr "Name"
 
 msgctxt "field:wishlist.wishlist,nereid_user:"
 msgid "Nereid User"
-msgstr "Website Benutzer"
+msgstr "Websitebenutzer"
 
 msgctxt "field:wishlist.wishlist,products:"
 msgid "Products"
@@ -90,17 +90,17 @@ msgctxt "model:wishlist.wishlist,name:"
 msgid "Wishlist"
 msgstr "Wunschliste"
 
+msgctxt "nereid:wishlist.py:150"
+msgid "Wishlist with name: %(name)s already exists."
+msgstr "Eine Wunschliste mit dem Namen \"%(name)s\" existiert bereits."
+
+msgctxt "nereid:wishlist.py:161"
+msgid "Wishlist Updated"
+msgstr "Wunschliste aktualisiert"
+
 msgctxt "nereid:wishlist.py:90"
 msgid "Default"
 msgstr "Standard"
-
-msgctxt "nereid:wishlist.py:148"
-msgid "Wishlist with name: %(name)s already exists."
-msgstr "Eine Wunschliste mit dem Namen: %(name)s existiert bereits."
-
-msgctxt "nereid:wishlist.py:159"
-msgid "Wishlist Updated"
-msgstr "Wunschliste aktualisiert"
 
 msgctxt "view:nereid.user:"
 msgid "Wishlist"
