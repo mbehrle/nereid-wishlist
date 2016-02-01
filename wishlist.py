@@ -87,7 +87,7 @@ class Wishlist(ModelSQL, ModelView):
         return type: wishlist
         """
         if not name:
-            name = _('Default')
+            name = unicode(_('Default'))
         try:
             wishlist, = cls.search([
                 ('nereid_user', '=', current_user.id),
