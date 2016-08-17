@@ -17,7 +17,7 @@ _ = make_lazy_gettext('nereid-wishlist')
 __all__ = [
     'NereidUser', 'Wishlist', 'Product',
     'ProductWishlistRelationship',
-    ]
+]
 __metaclass__ = PoolMeta
 
 
