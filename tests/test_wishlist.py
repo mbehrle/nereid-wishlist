@@ -11,14 +11,19 @@ import datetime
 
 import pycountry
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
+from trytond.tests.test_tryton import (
+    POOL, USER, CONTEXT,
+    ModuleTestCase, with_transaction
+)
 from trytond.transaction import Transaction
 from nereid.testing import NereidTestCase
 from nereid import current_user
 
 
-class TestWishlist(NereidTestCase):
+class TestWishlist(NereidTestCase, ModuleTestCase):
     "Test Wishlist"
+
+    module = 'nereid_wishlist'
 
     def setUp(self):
 
@@ -108,7 +113,8 @@ class TestWishlist(NereidTestCase):
             'account.create_chart', type="wizard")
 
         account_template, = AccountTemplate.search(
-            [('parent', '=', None)]
+            [('parent', '=', None),
+             ('name', '=', 'Minimal Account Chart')]
         )
 
         session_id, _, _ = account_create_chart.create()
@@ -264,7 +270,7 @@ class TestWishlist(NereidTestCase):
 
         self.guest_user, = self.NereidUser.create([{
             'party': guest_party.id,
-            'display_name': 'Guest User',
+            'name': 'Guest User',
             'email': 'guest@openlabs.co.in',
             'password': 'password',
             'company': self.company.id,
@@ -273,21 +279,21 @@ class TestWishlist(NereidTestCase):
         # Create test users
         self.registered_user, = self.NereidUser.create([{
             'party': self.party2.id,
-            'display_name': 'Registered User',
+            'name': 'Registered User',
             'email': 'email@example.com',
             'password': 'password',
             'company': self.company.id,
         }])
         self.registered_user2, = self.NereidUser.create([{
             'party': self.party3.id,
-            'display_name': 'Registered User 2',
+            'name': 'Registered User 2',
             'email': 'email2@example.com',
             'password': 'password2',
             'company': self.company.id,
         }])
         self.registered_user3, = self.NereidUser.create([{
             'party': self.party4.id,
-            'display_name': 'Registered User 3',
+            'name': 'Registered User 3',
             'email': 'email3@example.com',
             'password': 'password3',
             'company': self.company.id,
@@ -350,315 +356,316 @@ class TestWishlist(NereidTestCase):
             'guest_user': self.guest_user,
         }])
 
+    @with_transaction()
     def test_0010_create_wishlist(self):
         """
         Test to add a new wishlist.
         If wishlist already exist just return that wishlist.
         """
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            with app.test_client() as c:
-                # Guest user tries to create wishlist
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                # User login
-                self.login(c, 'email@example.com', 'password')
+        with app.test_client() as c:
+            # Guest user tries to create wishlist
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            # User login
+            self.login(c, 'email@example.com', 'password')
 
-                self.assertEqual(
-                    len(current_user.wishlists), 0
-                )
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                self.assertEqual(
-                    len(current_user.wishlists), 1
-                )
-                self.assertEqual(rv.status_code, 302)
+            self.assertEqual(
+                len(current_user.wishlists), 0
+            )
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            self.assertEqual(
+                len(current_user.wishlists), 1
+            )
+            self.assertEqual(rv.status_code, 302)
 
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(current_user.wishlists[0].name, 'Test')
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(current_user.wishlists[0].name, 'Test')
 
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }, headers=[('X-Requested-With', 'XMLHttpRequest')]
-                )
-                self.assertEqual(rv.status_code, 200)
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }, headers=[('X-Requested-With', 'XMLHttpRequest')]
+            )
+            self.assertEqual(rv.status_code, 200)
 
+    @with_transaction()
     def test_0020_view_list_of_wishlist(self):
         """
         Test to view all wishlist
         """
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            with app.test_client() as c:
+        with app.test_client() as c:
 
-                self.login(c, 'email@example.com', 'password')
+            self.login(c, 'email@example.com', 'password')
 
-                c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test1',
-                    }
-                )
-                rv = c.get('/wishlists')
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(rv.data, '2')
+            c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test1',
+                }
+            )
+            rv = c.get('/wishlists')
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(rv.data, '2')
 
+    @with_transaction()
     def test_0030_remove_wishlist(self):
         """
         Test to remove wishlist
         """
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            with app.test_client() as c:
+        with app.test_client() as c:
 
-                self.login(c, 'email@example.com', 'password')
+            self.login(c, 'email@example.com', 'password')
 
-                c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                c.post(
-                    '/wishlists',
+            c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            c.post(
+                '/wishlists',
 
-                    data={
-                        'name': 'Test1',
-                    }
-                )
-                self.assertEqual(
-                    len(current_user.wishlists), 2
-                )
+                data={
+                    'name': 'Test1',
+                }
+            )
+            self.assertEqual(
+                len(current_user.wishlists), 2
+            )
 
-                rv = c.delete(
-                    '/wishlists/%d' % (current_user.wishlists[0].id, )
-                )
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(
-                    len(current_user.wishlists), 1
-                )
+            rv = c.delete(
+                '/wishlists/%d' % (current_user.wishlists[0].id, )
+            )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(
+                len(current_user.wishlists), 1
+            )
 
-                rv = c.delete(
-                    '/wishlists/%d' % (current_user.wishlists[0].id, ),
-                    headers=[('X-Requested-With', 'XMLHttpRequest')]
-                )
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(
-                    len(current_user.wishlists), 0
-                )
+            rv = c.delete(
+                '/wishlists/%d' % (current_user.wishlists[0].id, ),
+                headers=[('X-Requested-With', 'XMLHttpRequest')]
+            )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(
+                len(current_user.wishlists), 0
+            )
 
+    @with_transaction()
     def test_0040_wishlist_products(self):
         """
         Test to add/remove a product to wishlist.
         """
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            uom, = self.Uom.search([], limit=1)
-            values1 = {
-                'name': 'Product-1',
-                'type': 'goods',
-                'list_price': Decimal('10'),
-                'cost_price': Decimal('5'),
-                'default_uom': uom.id,
-                'products': [
-                    ('create', [{
-                        'uri': 'product-1',
-                        'displayed_on_eshop': True
-                    }])
-                ]
-            }
-            values2 = {
-                'name': 'Product-1',
-                'type': 'goods',
-                'list_price': Decimal('10'),
-                'cost_price': Decimal('5'),
-                'default_uom': uom.id,
-                'products': [
-                    ('create', [{
-                        'uri': 'product-2',
-                        'displayed_on_eshop': True
-                    }])
-                ]
-            }
+        uom, = self.Uom.search([], limit=1)
+        values1 = {
+            'name': 'Product-1',
+            'type': 'goods',
+            'list_price': Decimal('10'),
+            'cost_price': Decimal('5'),
+            'default_uom': uom.id,
+            'products': [
+                ('create', [{
+                    'uri': 'product-1',
+                    'displayed_on_eshop': True
+                }])
+            ]
+        }
+        values2 = {
+            'name': 'Product-1',
+            'type': 'goods',
+            'list_price': Decimal('10'),
+            'cost_price': Decimal('5'),
+            'default_uom': uom.id,
+            'products': [
+                ('create', [{
+                    'uri': 'product-2',
+                    'displayed_on_eshop': True
+                }])
+            ]
+        }
 
-            template2, = self.Template.create([values2])
-            template1, = self.Template.create([values1])
+        template2, = self.Template.create([values2])
+        template1, = self.Template.create([values1])
 
-            with app.test_client() as c:
-                self.login(c, 'email@example.com', 'password')
+        with app.test_client() as c:
+            self.login(c, 'email@example.com', 'password')
 
-                # Add a product without creating any wishlist
-                rv = c.post(
+            # Add a product without creating any wishlist
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': template1.products[0].id,
+                    'action': 'add',
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(len(current_user.wishlists), 1)
+            self.assertEqual(len(current_user.wishlists[0].products), 1)
+            # Add product to specific wishlist
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': template2.products[0].id,
+                    'action': 'add',
+                    'wishlist': current_user.wishlists[0].id,
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(
+                len(current_user.wishlists[0].products), 2
+            )
+            # Remove Product
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': template1.products[0].id,
+                    'wishlist': current_user.wishlists[0].id,
+                    'action': 'remove',
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(len(current_user.wishlists[0].products), 1)
+
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': 11,
+                    'wishlist': current_user.wishlists[0].id,
+                    'action': 'remove',
+                }
+            )
+            self.assertEqual(rv.status_code, 404)
+
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': 11,
+                    'wishlist': current_user.wishlists[0].id,
+                    'action': 'other',
+                }
+            )
+            self.assertEqual(rv.status_code, 404)
+
+            # Test to see if no wishlist is found
+            with self.assertRaises(ValueError):
+                c.post(
                     'wishlists/products',
                     data={
                         'product': template1.products[0].id,
+                        'wishlist': 10,
                         'action': 'add',
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(len(current_user.wishlists), 1)
-                self.assertEqual(len(current_user.wishlists[0].products), 1)
-                # Add product to specific wishlist
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': template2.products[0].id,
-                        'action': 'add',
-                        'wishlist': current_user.wishlists[0].id,
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(
-                    len(current_user.wishlists[0].products), 2
-                )
-                # Remove Product
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': template1.products[0].id,
-                        'wishlist': current_user.wishlists[0].id,
-                        'action': 'remove',
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(len(current_user.wishlists[0].products), 1)
+                        }
+                    )
+            # xhr request
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': template2.products[0].id,
+                    'action': 'remove',
+                    'wishlist': current_user.wishlists[0].id,
+                }, headers=[('X-Requested-With', 'XMLHttpRequest')]
 
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': 11,
-                        'wishlist': current_user.wishlists[0].id,
-                        'action': 'remove',
-                    }
-                )
-                self.assertEqual(rv.status_code, 404)
+            )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(len(current_user.wishlists[0].products), 0)
 
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': 11,
-                        'wishlist': current_user.wishlists[0].id,
-                        'action': 'other',
-                    }
-                )
-                self.assertEqual(rv.status_code, 404)
+            rv = c.post(
+                'wishlists/products',
+                data={
+                    'product': template2.products[0].id,
+                    'action': 'add',
+                    'wishlist': current_user.wishlists[0].id,
+                }, headers=[('X-Requested-With', 'XMLHttpRequest')]
 
-                # Test to see if no wishlist is found
-                with self.assertRaises(ValueError):
-                    c.post(
-                        'wishlists/products',
-                        data={
-                            'product': template1.products[0].id,
-                            'wishlist': 10,
-                            'action': 'add',
-                            }
-                        )
-                # xhr request
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': template2.products[0].id,
-                        'action': 'remove',
-                        'wishlist': current_user.wishlists[0].id,
-                    }, headers=[('X-Requested-With', 'XMLHttpRequest')]
+            )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(len(current_user.wishlists[0].products), 1)
 
-                )
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(len(current_user.wishlists[0].products), 0)
-
-                rv = c.post(
-                    'wishlists/products',
-                    data={
-                        'product': template2.products[0].id,
-                        'action': 'add',
-                        'wishlist': current_user.wishlists[0].id,
-                    }, headers=[('X-Requested-With', 'XMLHttpRequest')]
-
-                )
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(len(current_user.wishlists[0].products), 1)
-
+    @with_transaction()
     def test_0050_render_single_wishlist(self):
         """
         Test to render single wishlist.
         """
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            with app.test_client() as c:
+        with app.test_client() as c:
 
-                self.login(c, 'email@example.com', 'password')
+            self.login(c, 'email@example.com', 'password')
 
-                c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
-                self.assertEqual(len(current_user.wishlists), 1)
+            c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
+            self.assertEqual(len(current_user.wishlists), 1)
 
-                rv = c.get(
-                    '/wishlists/%d'
-                    % (current_user.wishlists[0].id, )
-                )
-                self.assertEqual(rv.status_code, 200)
-                self.assertEqual(rv.data, 'Test')
+            rv = c.get(
+                '/wishlists/%d'
+                % (current_user.wishlists[0].id, )
+            )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(rv.data, 'Test')
 
-                # Xhr request
-                rv = c.get(
-                    '/wishlists/%d'
-                    % (current_user.wishlists[0].id, ),
-                    headers=[('X-Requested-With', 'XMLHttpRequest')]
-                )
+            # Xhr request
+            rv = c.get(
+                '/wishlists/%d'
+                % (current_user.wishlists[0].id, ),
+                headers=[('X-Requested-With', 'XMLHttpRequest')]
+            )
 
-                self.assertEqual(rv.status_code, 200)
+            self.assertEqual(rv.status_code, 200)
 
-                # User trying to access wishlist of another user
-                user1_wishlist_id = current_user.wishlists[0].id
-                self.login(c, 'email2@example.com', 'password2')
+            # User trying to access wishlist of another user
+            user1_wishlist_id = current_user.wishlists[0].id
+            self.login(c, 'email2@example.com', 'password2')
 
-                rv = c.get(
-                    '/wishlists/%d' % (user1_wishlist_id, )
-                )
-                self.assertEqual(rv.status_code, 404)
+            rv = c.get(
+                '/wishlists/%d' % (user1_wishlist_id, )
+            )
+            self.assertEqual(rv.status_code, 404)
 
+    @with_transaction()
     def test_0060_rename_wishlist(self):
         """
         Test rename a wishlist
@@ -666,149 +673,148 @@ class TestWishlist(NereidTestCase):
 
         Wishlist = POOL.get('wishlist.wishlist')
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            with app.test_client() as c:
-                self.login(c, 'email@example.com', 'password')
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'Test',
-                    }
-                )
+        with app.test_client() as c:
+            self.login(c, 'email@example.com', 'password')
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'Test',
+                }
+            )
 
-                rv = c.post(
-                    '/wishlists',
-                    data={
-                        'name': 'existing',
-                    }
-                )
+            rv = c.post(
+                '/wishlists',
+                data={
+                    'name': 'existing',
+                }
+            )
 
-                wishlist = current_user.wishlists[0]
+            wishlist = current_user.wishlists[0]
 
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(wishlist.name, 'Test')
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(wishlist.name, 'Test')
 
-                rv = c.post(
-                    '/wishlists/%d'
-                    % (wishlist.id, ),
-                    data={
-                        'name': 'existing',
-                    }
-                )
-                self.assertEqual(rv.status_code, 302)
-                self.assertEqual(wishlist.name, 'Test')
-                rv = c.post(
-                    '/wishlists/%d'
-                    % (wishlist.id, ),
-                    data={
-                        'name': 'Test2',
-                    }
-                )
+            rv = c.post(
+                '/wishlists/%d'
+                % (wishlist.id, ),
+                data={
+                    'name': 'existing',
+                }
+            )
+            self.assertEqual(rv.status_code, 302)
+            self.assertEqual(wishlist.name, 'Test')
+            rv = c.post(
+                '/wishlists/%d'
+                % (wishlist.id, ),
+                data={
+                    'name': 'Test2',
+                }
+            )
 
-                self.assertEqual(rv.status_code, 302)
-                wishlist = Wishlist(wishlist.id)    # reload the record
-                self.assertEqual(wishlist.name, 'Test2')
+            self.assertEqual(rv.status_code, 302)
+            wishlist = Wishlist(wishlist.id)    # reload the record
+            self.assertEqual(wishlist.name, 'Test2')
 
+    @with_transaction()
     def test_0070_copy_product(self):
         """
         Test copy product should not copy wishlists
         """
         Wishlist = POOL.get('wishlist.wishlist')
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
+        self.setup_defaults()
 
-            uom, = self.Uom.search([], limit=1)
-            self.Template.create([{
-                'name': 'Product-1',
-                'type': 'goods',
-                'list_price': Decimal('10'),
-                'cost_price': Decimal('5'),
-                'default_uom': uom.id,
-                'products': [
-                    ('create', [{
-                        'uri': 'product-1',
-                        'displayed_on_eshop': True
-                    }])
-                ]
-            }])
+        uom, = self.Uom.search([], limit=1)
+        self.Template.create([{
+            'name': 'Product-1',
+            'type': 'goods',
+            'list_price': Decimal('10'),
+            'cost_price': Decimal('5'),
+            'default_uom': uom.id,
+            'products': [
+                ('create', [{
+                    'uri': 'product-1',
+                    'displayed_on_eshop': True
+                }])
+            ]
+        }])
 
-            product1, = self.Product.search([])
+        product1, = self.Product.search([])
 
-            Wishlist.create([{
-                'nereid_user': self.registered_user,
-                'name': 'Books I Want to Read!',
-                'products': [('add', [product1])]
-            }])
+        Wishlist.create([{
+            'nereid_user': self.registered_user,
+            'name': 'Books I Want to Read!',
+            'products': [('add', [product1])]
+        }])
 
-            self.assertEqual(len(product1.wishlists), 1)
+        self.assertEqual(len(product1.wishlists), 1)
 
-            product2, = self.Product.copy([product1])
+        product2, = self.Product.copy([product1])
 
-            self.assertEqual(len(product2.wishlists), 0)
+        self.assertEqual(len(product2.wishlists), 0)
 
+    @with_transaction()
     def test_0080_access_public_private_wishlist(self):
         """
         Test to check working of public and private wishlist.
         """
         Wishlist = POOL.get('wishlist.wishlist')
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-            app = self.get_app()
+        self.setup_defaults()
+        app = self.get_app()
 
-            user_private_wishlist, = Wishlist.create([{
-                'nereid_user': self.registered_user,
-                'name': 'Books I Want to Read!',
-            }])
+        user_private_wishlist, = Wishlist.create([{
+            'nereid_user': self.registered_user,
+            'name': 'Books I Want to Read!',
+        }])
 
-            user2_private_wishlist, = Wishlist.create([{
-                'nereid_user': self.registered_user2,
-                'name': 'Books I don\'t Want to Read!',
-            }])
+        user2_private_wishlist, = Wishlist.create([{
+            'nereid_user': self.registered_user2,
+            'name': 'Books I don\'t Want to Read!',
+        }])
 
-            user3_public_wishlist, = Wishlist.create([{
-                'nereid_user': self.registered_user3,
-                'name': 'Books I don\'t like!',
-                'is_public': True
-            }])
+        user3_public_wishlist, = Wishlist.create([{
+            'nereid_user': self.registered_user3,
+            'name': 'Books I don\'t like!',
+            'is_public': True
+        }])
 
-            with app.test_client() as c:
+        with app.test_client() as c:
 
-                # Guest user trying to access a private wishlist
-                rv = c.get(
-                    '/wishlists/%d' % (user_private_wishlist, )
-                    )
-                self.assertEqual(rv.status_code, 404)
+            # Guest user trying to access a private wishlist
+            rv = c.get(
+                '/wishlists/%d' % (user_private_wishlist, )
+            )
+            self.assertEqual(rv.status_code, 404)
 
-                # Guest user trying to access a public wishlist
-                rv = c.get(
-                    '/wishlists/%d' % (user3_public_wishlist, )
-                    )
-                self.assertEqual(rv.status_code, 200)
+            # Guest user trying to access a public wishlist
+            rv = c.get(
+                '/wishlists/%d' % (user3_public_wishlist, )
+            )
+            self.assertEqual(rv.status_code, 200)
 
-                self.login(c, 'email@example.com', 'password')
+            self.login(c, 'email@example.com', 'password')
 
-                # User trying to access its own wishlist
-                rv = c.get(
-                    '/wishlists/%d' % (user_private_wishlist, )
-                )
-                self.assertEqual(rv.status_code, 200)
+            # User trying to access its own wishlist
+            rv = c.get(
+                '/wishlists/%d' % (user_private_wishlist, )
+            )
+            self.assertEqual(rv.status_code, 200)
 
-                # User trying to access private wishlist of another user
-                rv = c.get(
-                    '/wishlists/%d' % (user2_private_wishlist, )
-                )
-                self.assertEqual(rv.status_code, 404)
+            # User trying to access private wishlist of another user
+            rv = c.get(
+                '/wishlists/%d' % (user2_private_wishlist, )
+            )
+            self.assertEqual(rv.status_code, 404)
 
-                # User trying to access public wishlist of another user
-                rv = c.get(
-                    '/wishlists/%d' % (user3_public_wishlist, )
-                )
-                self.assertEqual(rv.status_code, 200)
+            # User trying to access public wishlist of another user
+            rv = c.get(
+                '/wishlists/%d' % (user3_public_wishlist, )
+            )
+            self.assertEqual(rv.status_code, 200)
 
 
 def suite():
