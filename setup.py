@@ -86,7 +86,7 @@ requires = []
 MODULE2PREFIX = {}
 
 MODULE = "nereid_wishlist"
-PREFIX = "fio"
+PREFIX = "m9s"
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
         requires.append(
