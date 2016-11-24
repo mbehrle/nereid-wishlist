@@ -233,8 +233,7 @@ class ProductWishlistRelationship(ModelSQL):
     product = fields.Many2One(
         'product.product', 'Product',
         domain=[
-            ('displayed_on_eshop', '=', True),
-            ('template.active', '=', True),
+            ('active', '=', True),
         ],
         ondelete='CASCADE', select=True, required=True,
     )
