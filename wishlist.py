@@ -11,7 +11,7 @@ from nereid import login_required, current_user, request, \
 from nereid.contrib.locale import make_lazy_gettext
 from wtforms import ValidationError
 
-_ = make_lazy_gettext('nereid-wishlist')
+_ = make_lazy_gettext('nereid_wishlist')
 
 
 __all__ = [
